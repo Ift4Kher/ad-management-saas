@@ -6,6 +6,7 @@
 
 import { Router, type Request, type Response } from 'express';
 import { prisma } from '../lib/db.js';
+import { redis } from '../lib/redis.js';
 import { requireAuth, requireWorkspaceAccess, requireEmailVerified } from '../middleware/auth.js';
 import { WorkspaceRole, Platform, CampaignStatus, RuleMetric, RuleOperator, RuleAction, AssetType, PlanTier } from '@prisma/client';
 import { logger } from '../lib/logger.js';
@@ -77,6 +78,85 @@ workspacesRouter.get('/', requireAuth, async (req: Request, res: Response): Prom
     res.status(500).json({ error: 'Internal server error.' });
   }
 });
+
+/**
+ * GET /api/workspaces/admin/stats
+ * Global Super Admin System Statistics (Requires Super Admin email).
+ * MUST BE MOUNTED BEFORE /:workspaceId TO AVOID EXPRESS ROUTE PARAM CONFLICTS.
+ */
+workspacesRouter.get(
+  '/admin/stats',
+  requireAuth,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (req.user?.email !== 'admin@adsync.com') {
+        res.status(403).json({ error: 'Forbidden: Super Admin access required.' });
+        return;
+      }
+
+      // 1. Check Redis Cache for Instant Response
+      if (redis) {
+        try {
+          const cached = await redis.get('adsync:admin_stats');
+          if (cached) {
+            res.json(JSON.parse(cached));
+            return;
+          }
+        } catch {
+          // Fallthrough to DB if Redis cache misses
+        }
+      }
+
+      // 2. Run all database queries concurrently in Parallel
+      const [
+        totalUsers,
+        totalWorkspaces,
+        totalCampaigns,
+        totalConnections,
+        aiAgg,
+        workspacesList,
+      ] = await Promise.all([
+        prisma.user.count(),
+        prisma.workspace.count(),
+        prisma.campaign.count(),
+        prisma.adAccountConnection.count(),
+        prisma.aiUsageLog.aggregate({ _sum: { tokensUsed: true } }),
+        prisma.workspace.findMany({
+          include: {
+            owner: { select: { id: true, name: true, email: true } },
+            _count: { select: { members: true, campaigns: true, adAccountConnections: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+      ]);
+
+      const responseData = {
+        systemStats: {
+          totalUsers,
+          totalWorkspaces,
+          totalCampaigns,
+          totalConnections,
+          totalAiTokensUsed: aiAgg._sum.tokensUsed || 0,
+        },
+        workspaces: workspacesList,
+      };
+
+      // Cache result in Redis for 10 seconds
+      if (redis) {
+        try {
+          await redis.setex('adsync:admin_stats', 10, JSON.stringify(responseData));
+        } catch {
+          // ignore cache write errors
+        }
+      }
+
+      res.json(responseData);
+    } catch (err) {
+      logger.error({ err }, 'Error fetching system admin stats');
+      res.status(500).json({ error: 'Internal server error.' });
+    }
+  },
+);
 
 /**
  * POST /api/workspaces
@@ -961,86 +1041,3 @@ workspacesRouter.post(
     }
   },
 );
-
-/**
- * GET /api/admin/stats
- * Global Super Admin System Statistics (Requires Super Admin email).
- */
-workspacesRouter.get(
-  '/admin/stats',
-  requireAuth,
-  async (req: Request, res: Response): Promise<void> => {
-    try {
-      if (req.user?.email !== 'admin@adsync.com') {
-        res.status(403).json({ error: 'Forbidden: Super Admin access required.' });
-        return;
-      }
-
-      // 1. Check Redis Cache for Instant Response
-      if (redis) {
-        try {
-          const cached = await redis.get('adsync:admin_stats');
-          if (cached) {
-            res.json(JSON.parse(cached));
-            return;
-          }
-        } catch {
-          // Fallthrough to DB if Redis cache misses
-        }
-      }
-
-      // 2. Run all database queries concurrently in Parallel
-      const [
-        totalUsers,
-        totalWorkspaces,
-        totalCampaigns,
-        totalConnections,
-        aiAgg,
-        workspacesList,
-      ] = await Promise.all([
-        prisma.user.count(),
-        prisma.workspace.count(),
-        prisma.campaign.count(),
-        prisma.adAccountConnection.count(),
-        prisma.aiUsageLog.aggregate({ _sum: { tokensUsed: true } }),
-        prisma.workspace.findMany({
-          include: {
-            owner: { select: { id: true, name: true, email: true } },
-            _count: { select: { members: true, campaigns: true, adAccountConnections: true } },
-          },
-          orderBy: { createdAt: 'desc' },
-        }),
-      ]);
-
-      const responseData = {
-        systemStats: {
-          totalUsers,
-          totalWorkspaces,
-          totalCampaigns,
-          totalConnections,
-          totalAiTokensUsed: aiAgg._sum.tokensUsed || 0,
-        },
-        workspaces: workspacesList,
-      };
-
-      // Cache result in Redis for 10 seconds
-      if (redis) {
-        try {
-          await redis.setex('adsync:admin_stats', 10, JSON.stringify(responseData));
-        } catch {
-          // ignore cache write errors
-        }
-      }
-
-      res.json(responseData);
-    } catch (err) {
-      logger.error({ err }, 'Error fetching system admin stats');
-      res.status(500).json({ error: 'Internal server error.' });
-    }
-  },
-);
-
-
-
-
-
