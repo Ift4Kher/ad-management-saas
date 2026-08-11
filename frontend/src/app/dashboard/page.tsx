@@ -24,6 +24,11 @@ export default function DashboardPage() {
 
   // Fetch active workspace details when active workspace changes
   useEffect(() => {
+    if (user?.email === 'admin@adsync.com') {
+      window.location.href = '/dashboard/admin';
+      return;
+    }
+
     if (user && activeWorkspace) {
       setDetailsLoading(true);
       setActionError(null);

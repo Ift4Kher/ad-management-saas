@@ -112,70 +112,113 @@ export default function DashboardHeader() {
         </div>
       </header>
 
-      {/* Sub-navigation Tabs — horizontally scrollable on mobile */}
+      {/* Sub-navigation Tabs — Completely distinct for Super Admin vs Business Owners */}
       <div className="flex items-center gap-4 sm:gap-6 px-4 sm:px-6 overflow-x-auto scrollbar-hide">
-        <Link
-          href="/dashboard"
-          className={`border-b-2 py-3 text-sm font-semibold transition-colors ${
-            pathname === '/dashboard'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-neutral-500 hover:text-neutral-900'
-          }`}
-        >
-          Overview
-        </Link>
-        <Link
-          href="/dashboard/analytics"
-          className={`border-b-2 py-3 text-sm font-semibold transition-colors ${
-            pathname === '/dashboard/analytics'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-neutral-500 hover:text-neutral-900'
-          }`}
-        >
-          Analytics
-        </Link>
-        <Link
-          href="/dashboard/campaigns"
-          className={`border-b-2 py-3 text-sm font-semibold transition-colors ${
-            pathname.startsWith('/dashboard/campaigns')
-              ? 'border-primary text-primary'
-              : 'border-transparent text-neutral-500 hover:text-neutral-900'
-          }`}
-        >
-          Campaigns
-        </Link>
-        <Link
-          href="/dashboard/rules"
-          className={`border-b-2 py-3 text-sm font-semibold transition-colors ${
-            pathname === '/dashboard/rules'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-neutral-500 hover:text-neutral-900'
-          }`}
-        >
-          Automation Rules
-        </Link>
-        <Link
-          href="/dashboard/creatives"
-          className={`border-b-2 py-3 text-sm font-semibold transition-colors ${
-            pathname === '/dashboard/creatives'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-neutral-500 hover:text-neutral-900'
-          }`}
-        >
-          Creative Library
-        </Link>
-        <Link
-          href="/dashboard/team"
-          className={`border-b-2 py-3 text-sm font-semibold transition-colors ${
-            pathname === '/dashboard/team'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-neutral-500 hover:text-neutral-900'
-          }`}
-        >
-          Team
-        </Link>
-        {user.email !== 'admin@adsync.com' && (
+        {user.email === 'admin@adsync.com' ? (
           <>
+            <Link
+              href="/dashboard/admin"
+              className={`border-b-2 py-3 text-sm font-bold transition-colors ${
+                pathname === '/dashboard/admin'
+                  ? 'border-error text-error'
+                  : 'border-transparent text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              👑 Platform Overview
+            </Link>
+            <Link
+              href="/dashboard/admin/workspaces"
+              className={`border-b-2 py-3 text-sm font-bold transition-colors ${
+                pathname === '/dashboard/admin/workspaces'
+                  ? 'border-error text-error'
+                  : 'border-transparent text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              🏢 Tenant Workspaces
+            </Link>
+            <Link
+              href="/dashboard/admin/billing"
+              className={`border-b-2 py-3 text-sm font-bold transition-colors ${
+                pathname === '/dashboard/admin/billing'
+                  ? 'border-error text-error'
+                  : 'border-transparent text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              ⚙️ Billing & Pricing (BDT ৳)
+            </Link>
+            <Link
+              href="/dashboard/admin/system"
+              className={`border-b-2 py-3 text-sm font-bold transition-colors ${
+                pathname === '/dashboard/admin/system'
+                  ? 'border-error text-error'
+                  : 'border-transparent text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              🔌 API Health & Redis
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link
+              href="/dashboard"
+              className={`border-b-2 py-3 text-sm font-semibold transition-colors ${
+                pathname === '/dashboard'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-900'
+              }`}
+            >
+              Overview
+            </Link>
+            <Link
+              href="/dashboard/analytics"
+              className={`border-b-2 py-3 text-sm font-semibold transition-colors ${
+                pathname === '/dashboard/analytics'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-900'
+              }`}
+            >
+              Analytics
+            </Link>
+            <Link
+              href="/dashboard/campaigns"
+              className={`border-b-2 py-3 text-sm font-semibold transition-colors ${
+                pathname.startsWith('/dashboard/campaigns')
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-900'
+              }`}
+            >
+              Campaigns
+            </Link>
+            <Link
+              href="/dashboard/rules"
+              className={`border-b-2 py-3 text-sm font-semibold transition-colors ${
+                pathname === '/dashboard/rules'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-900'
+              }`}
+            >
+              Automation Rules
+            </Link>
+            <Link
+              href="/dashboard/creatives"
+              className={`border-b-2 py-3 text-sm font-semibold transition-colors ${
+                pathname === '/dashboard/creatives'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-900'
+              }`}
+            >
+              Creative Library
+            </Link>
+            <Link
+              href="/dashboard/team"
+              className={`border-b-2 py-3 text-sm font-semibold transition-colors ${
+                pathname === '/dashboard/team'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-900'
+              }`}
+            >
+              Team
+            </Link>
             <Link
               href="/dashboard/billing"
               className={`border-b-2 py-3 text-sm font-semibold transition-colors ${
@@ -197,18 +240,6 @@ export default function DashboardHeader() {
               Connections
             </Link>
           </>
-        )}
-        {user.email === 'admin@adsync.com' && (
-          <Link
-            href="/dashboard/admin"
-            className={`border-b-2 py-3 text-sm font-semibold transition-colors ${
-              pathname === '/dashboard/admin'
-                ? 'border-error text-error'
-                : 'border-transparent text-error/80 hover:text-error'
-            }`}
-          >
-            👑 Super Admin
-          </Link>
         )}
       </div>
 
