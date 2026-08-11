@@ -174,26 +174,30 @@ export default function DashboardHeader() {
         >
           Team
         </Link>
-        <Link
-          href="/dashboard/billing"
-          className={`border-b-2 py-3 text-sm font-semibold transition-colors ${
-            pathname === '/dashboard/billing'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-neutral-500 hover:text-neutral-900'
-          }`}
-        >
-          Billing
-        </Link>
-        <Link
-          href="/dashboard/connections"
-          className={`border-b-2 py-3 text-sm font-semibold transition-colors ${
-            pathname === '/dashboard/connections'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-neutral-500 hover:text-neutral-900'
-          }`}
-        >
-          Connections
-        </Link>
+        {user.email !== 'admin@adsync.com' && (
+          <>
+            <Link
+              href="/dashboard/billing"
+              className={`border-b-2 py-3 text-sm font-semibold transition-colors ${
+                pathname === '/dashboard/billing'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-900'
+              }`}
+            >
+              Billing
+            </Link>
+            <Link
+              href="/dashboard/connections"
+              className={`border-b-2 py-3 text-sm font-semibold transition-colors ${
+                pathname === '/dashboard/connections'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-900'
+              }`}
+            >
+              Connections
+            </Link>
+          </>
+        )}
         {user.email === 'admin@adsync.com' && (
           <Link
             href="/dashboard/admin"

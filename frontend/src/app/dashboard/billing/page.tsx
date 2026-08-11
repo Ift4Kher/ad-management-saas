@@ -320,8 +320,8 @@ export default function BillingPage() {
                 </div>
 
                 <div>
-                  <div className="text-3xl font-extrabold text-neutral-900">{plan.priceUsd} <span className="text-xs text-neutral-500 font-normal">/ month</span></div>
-                  <div className="text-xs font-semibold text-neutral-500 mt-0.5">or {plan.priceBdt} BDT via bKash / Nagad</div>
+                  <div className="text-3xl font-extrabold text-neutral-900">{plan.priceBdt} <span className="text-xs text-neutral-500 font-normal">BDT / month</span></div>
+                  <div className="text-xs font-semibold text-neutral-500 mt-0.5">Approx. {plan.priceUsd} USD via Card / MFS (bKash/Nagad)</div>
                 </div>
 
                 <ul className="space-y-2 text-xs text-neutral-600 border-t border-neutral-100 pt-3">
