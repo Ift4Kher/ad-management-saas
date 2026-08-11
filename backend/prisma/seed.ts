@@ -33,6 +33,60 @@ async function main() {
   await prisma.workspace.deleteMany();
   await prisma.user.deleteMany();
 
+  // Create Super Admin User & Super Admin Workspace
+  const passwordHashAdmin = await bcrypt.hash('AdminPass123!', 10);
+  const userAdmin = await prisma.user.create({
+    data: {
+      name: 'Super Admin',
+      email: 'admin@adsync.com',
+      passwordHash: passwordHashAdmin,
+      emailVerifiedAt: new Date(),
+    },
+  });
+
+  const workspaceAdmin = await prisma.workspace.create({
+    data: {
+      name: 'Super Admin Enterprise Workspace',
+      ownerId: userAdmin.id,
+      locale: 'en',
+    },
+  });
+
+  await prisma.workspaceMember.create({
+    data: {
+      userId: userAdmin.id,
+      workspaceId: workspaceAdmin.id,
+      role: WorkspaceRole.OWNER,
+    },
+  });
+
+  // Connect Google, Meta, and TikTok accounts to Super Admin Workspace
+  await prisma.adAccountConnection.createMany({
+    data: [
+      {
+        workspaceId: workspaceAdmin.id,
+        platform: Platform.GOOGLE,
+        accessTokenEncrypted: encryptToken('ya29.a0ARdaC0_ADMIN_GOOGLE_TOKEN'),
+        status: ConnectionStatus.CONNECTED,
+        connectedAt: new Date(),
+      },
+      {
+        workspaceId: workspaceAdmin.id,
+        platform: Platform.META,
+        accessTokenEncrypted: encryptToken('EAAG_ADMIN_META_TOKEN'),
+        status: ConnectionStatus.CONNECTED,
+        connectedAt: new Date(),
+      },
+      {
+        workspaceId: workspaceAdmin.id,
+        platform: Platform.TIKTOK,
+        accessTokenEncrypted: encryptToken('TT_ADMIN_TIKTOK_TOKEN'),
+        status: ConnectionStatus.CONNECTED,
+        connectedAt: new Date(),
+      },
+    ],
+  });
+
   // Create User Alpha & Workspace Alpha
   const passwordHashAlpha = await bcrypt.hash('Password123!', 10);
   const userAlpha = await prisma.user.create({
