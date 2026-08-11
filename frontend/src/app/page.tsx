@@ -7,6 +7,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import I18nProvider from '@/components/I18nProvider';
 import LanguageToggle from '@/components/LanguageToggle';
@@ -72,13 +73,16 @@ function HomeContent() {
 
           {/* Gradient CTA button — the ONE gradient element on this page */}
           <div className="mt-8">
-            <button className="bg-gradient-primary inline-flex items-center gap-2 rounded-[var(--radius-md)] px-6 py-3 text-sm font-semibold text-white shadow-md transition-shadow hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-start">
+            <Link
+              href="/signup"
+              className="bg-gradient-primary inline-flex items-center gap-2 rounded-[var(--radius-md)] px-6 py-3 text-sm font-semibold text-white shadow-md transition-shadow hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-start"
+            >
               {t('cta.get_started')}
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 12h14" />
                 <path d="m12 5 7 7-7 7" />
               </svg>
-            </button>
+            </Link>
           </div>
         </div>
 
