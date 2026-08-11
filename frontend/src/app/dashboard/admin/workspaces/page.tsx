@@ -28,6 +28,18 @@ function AdminWorkspacesContent() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check sessionStorage cache for instant rendering
+    const cachedData = sessionStorage.getItem('adsync_admin_stats');
+    if (cachedData) {
+      try {
+        const parsed = JSON.parse(cachedData);
+        setWorkspaces(parsed.workspaces);
+        setLoading(false);
+      } catch {
+        // ignore parse error
+      }
+    }
+
     const fetchWorkspaces = async () => {
       try {
         const token = localStorage.getItem('adsync_token');
@@ -41,8 +53,11 @@ function AdminWorkspacesContent() {
 
         const data = await res.json();
         setWorkspaces(data.workspaces);
+        sessionStorage.setItem('adsync_admin_stats', JSON.stringify(data));
       } catch (err: any) {
-        setError(err.message || 'Error loading workspaces');
+        if (!cachedData) {
+          setError(err.message || 'Error loading workspaces');
+        }
       } finally {
         setLoading(false);
       }

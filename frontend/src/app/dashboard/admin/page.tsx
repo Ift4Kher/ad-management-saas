@@ -43,6 +43,19 @@ function SuperAdminContent() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check sessionStorage cache for instant FCP (< 1ms)
+    const cachedData = sessionStorage.getItem('adsync_admin_stats');
+    if (cachedData) {
+      try {
+        const parsed = JSON.parse(cachedData);
+        setStats(parsed.systemStats);
+        setWorkspaces(parsed.workspaces);
+        setLoading(false);
+      } catch {
+        // ignore JSON parse error
+      }
+    }
+
     const fetchAdminStats = async () => {
       try {
         const token = localStorage.getItem('adsync_token');
@@ -61,8 +74,11 @@ function SuperAdminContent() {
         const data = await res.json();
         setStats(data.systemStats);
         setWorkspaces(data.workspaces);
+        sessionStorage.setItem('adsync_admin_stats', JSON.stringify(data));
       } catch (err: any) {
-        setError(err.message || 'Error loading Super Admin dashboard');
+        if (!cachedData) {
+          setError(err.message || 'Error loading Super Admin dashboard');
+        }
       } finally {
         setLoading(false);
       }

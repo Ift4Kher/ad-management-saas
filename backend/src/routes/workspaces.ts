@@ -976,24 +976,43 @@ workspacesRouter.get(
         return;
       }
 
-      const totalUsers = await prisma.user.count();
-      const totalWorkspaces = await prisma.workspace.count();
-      const totalCampaigns = await prisma.campaign.count();
-      const totalConnections = await prisma.adAccountConnection.count();
+      // 1. Check Redis Cache for Instant Response
+      if (redis) {
+        try {
+          const cached = await redis.get('adsync:admin_stats');
+          if (cached) {
+            res.json(JSON.parse(cached));
+            return;
+          }
+        } catch {
+          // Fallthrough to DB if Redis cache misses
+        }
+      }
 
-      const aiAgg = await prisma.aiUsageLog.aggregate({
-        _sum: { tokensUsed: true },
-      });
+      // 2. Run all database queries concurrently in Parallel
+      const [
+        totalUsers,
+        totalWorkspaces,
+        totalCampaigns,
+        totalConnections,
+        aiAgg,
+        workspacesList,
+      ] = await Promise.all([
+        prisma.user.count(),
+        prisma.workspace.count(),
+        prisma.campaign.count(),
+        prisma.adAccountConnection.count(),
+        prisma.aiUsageLog.aggregate({ _sum: { tokensUsed: true } }),
+        prisma.workspace.findMany({
+          include: {
+            owner: { select: { id: true, name: true, email: true } },
+            _count: { select: { members: true, campaigns: true, adAccountConnections: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+      ]);
 
-      const workspacesList = await prisma.workspace.findMany({
-        include: {
-          owner: { select: { id: true, name: true, email: true } },
-          _count: { select: { members: true, campaigns: true, adAccountConnections: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-
-      res.json({
+      const responseData = {
         systemStats: {
           totalUsers,
           totalWorkspaces,
@@ -1002,7 +1021,18 @@ workspacesRouter.get(
           totalAiTokensUsed: aiAgg._sum.tokensUsed || 0,
         },
         workspaces: workspacesList,
-      });
+      };
+
+      // Cache result in Redis for 10 seconds
+      if (redis) {
+        try {
+          await redis.setex('adsync:admin_stats', 10, JSON.stringify(responseData));
+        } catch {
+          // ignore cache write errors
+        }
+      }
+
+      res.json(responseData);
     } catch (err) {
       logger.error({ err }, 'Error fetching system admin stats');
       res.status(500).json({ error: 'Internal server error.' });
