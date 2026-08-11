@@ -1,0 +1,173 @@
+/* =============================================================================
+ * AdSync — Global Stylesheet & Design System
+ * =============================================================================
+ * THIS IS THE SINGLE SOURCE OF TRUTH for all design tokens in the project.
+ * Every screen must use these tokens. Do NOT introduce new hex values,
+ * font sizes, or spacing values without explicit approval.
+ * ========================================================================== */
+
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+ * Design Tokens (Tailwind v4 @theme)
+ * -------------------------------------------------------------------------- */
+@theme inline {
+  /* --- Primary colors (gradient pair: deep indigo → violet) --- */
+  --color-primary-start: #4F46E5;
+  --color-primary-end: #7C3AED;
+  --color-primary: #4F46E5;
+
+  /* --- Neutral scale (cool grays) --- */
+  --color-neutral-900: #0F172A;
+  --color-neutral-700: #334155;
+  --color-neutral-600: #475569;
+  --color-neutral-400: #94A3B8;
+  --color-neutral-300: #CBD5E1;
+  --color-neutral-200: #E2E8F0;
+  --color-neutral-100: #F1F5F9;
+  --color-neutral-50: #F8FAFC;
+
+  /* --- Semantic status colors (NEVER decorative) --- */
+  --color-success: #16A34A;
+  --color-warning: #D97706;
+  --color-error: #DC2626;
+
+  /* --- Surface & background --- */
+  --color-surface: #FFFFFF;
+  --color-background: #F8FAFC;
+
+  /* --- Font family --- */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* --- Type scale (fixed: 12/14/16/20/28/36px) --- */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.75rem;
+  --text-xl--line-height: 2.25rem;
+  --text-2xl: 2.25rem;
+  --text-2xl--line-height: 2.75rem;
+
+  /* --- Border radius scale --- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+}
+
+/* ---------------------------------------------------------------------------
+ * Base styles
+ * -------------------------------------------------------------------------- */
+body {
+  background-color: var(--color-background);
+  color: var(--color-neutral-900);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--text-base--line-height);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---------------------------------------------------------------------------
+ * Gradient utility — THE ONE APPROVED GRADIENT
+ *
+ * Two-stop linear at 135deg. Max 1 per viewport.
+ * Never gradient text on gradient background.
+ * -------------------------------------------------------------------------- */
+.bg-gradient-primary {
+  background: linear-gradient(135deg, var(--color-primary-start), var(--color-primary-end));
+}
+
+.text-gradient-primary {
+  background: linear-gradient(135deg, var(--color-primary-start), var(--color-primary-end));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ---------------------------------------------------------------------------
+ * Focus states — keyboard accessibility
+ * -------------------------------------------------------------------------- */
+*:focus-visible {
+  outline: 2px solid var(--color-primary-start);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ---------------------------------------------------------------------------
+ * Form input reset — no unstyled native defaults
+ * -------------------------------------------------------------------------- */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+input[type="url"],
+input[type="tel"],
+textarea,
+select {
+  appearance: none;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+  color: var(--color-neutral-900);
+  background-color: var(--color-surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  width: 100%;
+  font-family: inherit;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--color-primary-start);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-neutral-400);
+}
+
+/* ---------------------------------------------------------------------------
+ * Scrollbar styling
+ * -------------------------------------------------------------------------- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-neutral-300);
+  border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-neutral-400);
+}
+
+/* ---------------------------------------------------------------------------
+ * Utility: Hide scrollbar while preserving scroll (for horizontal tab bars)
+ * -------------------------------------------------------------------------- */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Environment variables (never commit secrets)
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+dist/
+.next/
+out/
+
+# Test / coverage
+coverage/
+test-results/
+playwright-report/
+
+# Logs
+*.log
+pino-*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

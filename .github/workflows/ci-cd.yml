@@ -1,0 +1,60 @@
+name: AdSync CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, staging ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build & Code Health Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Monorepo Dependencies
+        run: npm ci
+
+      - name: Build Express Backend API
+        run: npm run build --workspace=backend
+        env:
+          DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
+          TOKEN_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+          JWT_SECRET: "0123456789abcdef0123456789abcdef"
+
+      - name: Build Next.js Frontend Bundle
+        run: npm run build --workspace=frontend
+        env:
+          NEXT_PUBLIC_API_URL: "http://localhost:4000"
+
+  deploy-hostinger:
+    name: Hostinger Production Deployment
+    needs: [build-and-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.HOSTINGER_HOST != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Hostinger via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOSTINGER_HOST }}
+          username: ${{ secrets.HOSTINGER_USERNAME }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          script: |
+            cd /home/${{ secrets.HOSTINGER_USERNAME }}/public_html/adsync
+            git pull origin main
+            npm ci
+            cd backend && npx prisma db push && npm run build && cd ..
+            cd frontend && npm run build && cd ..
+            pm2 reload ecosystem.config.js --env production
+            echo "🚀 AdSync Production Deployment Completed Successfully!"

@@ -1,0 +1,323 @@
+// =============================================================================
+// AdSync Database Schema — Prisma ORM on Neon (PostgreSQL)
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum Platform {
+  GOOGLE
+  META
+  TIKTOK
+}
+
+enum ConnectionStatus {
+  CONNECTED
+  DISCONNECTED
+  EXPIRED
+  ERROR
+}
+
+enum CampaignStatus {
+  DRAFT
+  PUBLISHING
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum PublishStatus {
+  PENDING
+  PUBLISHING
+  SUCCESS
+  FAILED
+}
+
+enum RuleMetric {
+  SPEND
+  CPA
+  ROAS
+}
+
+enum RuleOperator {
+  GREATER_THAN
+  LESS_THAN
+}
+
+enum RuleAction {
+  NOTIFY
+  PAUSE
+}
+
+enum NotificationStatus {
+  UNREAD
+  READ
+  PENDING_CONFIRMATION
+  CONFIRMED
+  REJECTED
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  ACTION_REQUIRED
+}
+
+enum AssetType {
+  IMAGE
+  VIDEO
+  TEXT
+  CAROUSEL
+}
+
+enum PaymentProvider {
+  STRIPE
+  BKASH
+  NAGAD
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+}
+
+enum PlanTier {
+  STARTER
+  GROWTH
+  AGENCY
+}
+
+// -----------------------------------------------------------------------------
+// Models
+// -----------------------------------------------------------------------------
+
+model User {
+  id              String            @id @default(cuid())
+  name            String
+  email           String            @unique
+  passwordHash    String            @map("password_hash")
+  locale          String            @default("en")
+  emailVerifiedAt DateTime?         @map("email_verified_at")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  ownedWorkspaces Workspace[]       @relation("WorkspaceOwner")
+  memberships     WorkspaceMember[]
+  aiUsageLogs     AiUsageLog[]
+
+  @@map("users")
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String   @map("owner_id")
+  locale               String             @default("en")
+  plan                 PlanTier           @default(STARTER)
+  subscriptionStatus   SubscriptionStatus @default(ACTIVE) @map("subscription_status")
+  stripeCustomerId     String?            @map("stripe_customer_id")
+  stripeSubscriptionId String?            @map("stripe_subscription_id")
+  currentPeriodEnd     DateTime?          @map("current_period_end")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  owner                 User                  @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members               WorkspaceMember[]
+  adAccountConnections AdAccountConnection[]
+  campaigns             Campaign[]
+  creativeAssets        CreativeAsset[]
+  automationRules       AutomationRule[]
+  notifications         Notification[]
+  subscriptionEvents    SubscriptionEvent[]
+  aiUsageLogs           AiUsageLog[]
+
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  userId      String        @map("user_id")
+  workspaceId String        @map("workspace_id")
+  role        WorkspaceRole @default(VIEWER)
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([userId, workspaceId])
+  @@index([workspaceId])
+  @@index([userId])
+  @@map("workspace_members")
+}
+
+model AdAccountConnection {
+  id                    String           @id @default(cuid())
+  workspaceId           String           @map("workspace_id")
+  platform              Platform
+  accessTokenEncrypted  String           @map("access_token_encrypted")
+  refreshTokenEncrypted String?          @map("refresh_token_encrypted")
+  status                ConnectionStatus @default(CONNECTED)
+  connectedAt           DateTime         @default(now()) @map("connected_at")
+  tokenExpiresAt        DateTime?        @map("token_expires_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([workspaceId, platform])
+  @@map("ad_account_connections")
+}
+
+model Campaign {
+  id          String         @id @default(cuid())
+  workspaceId String         @map("workspace_id")
+  name        String         @default("Draft Campaign")
+  platform    Platform
+  objective   String
+  status      CampaignStatus @default(DRAFT)
+  budget      Decimal        @db.Decimal(10, 2)
+  metadata    Json?
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  publishAttempts PublishAttempt[]
+  automationRules AutomationRule[]
+  notifications   Notification[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, platform])
+  @@map("campaigns")
+}
+
+model PublishAttempt {
+  id            String        @id @default(cuid())
+  campaignId    String        @map("campaign_id")
+  platform      Platform
+  status        PublishStatus @default(PENDING)
+  externalId    String?       @map("external_id")
+  errorMessage  String?       @map("error_message")
+  errorCode     String?       @map("error_code")
+  jobId         String?       @map("job_id")
+  attemptNumber Int           @default(1) @map("attempt_number")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([campaignId, platform])
+  @@map("publish_attempts")
+}
+
+model CreativeAsset {
+  id                  String    @id @default(cuid())
+  workspaceId         String    @map("workspace_id")
+  name                String    @default("Untitled Asset")
+  type                AssetType
+  url                 String
+  content             String?   @db.Text
+  metadata            Json?
+  aiGenerated         Boolean   @default(false) @map("ai_generated")
+  complianceCheckedAt DateTime? @map("compliance_checked_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("creative_assets")
+}
+
+model AutomationRule {
+  id              String       @id @default(cuid())
+  workspaceId     String       @map("workspace_id")
+  campaignId      String?      @map("campaign_id")
+  name            String
+  metric          RuleMetric
+  operator        RuleOperator
+  threshold       Decimal      @db.Decimal(10, 2)
+  action          RuleAction
+  enabled         Boolean      @default(true)
+  lastTriggeredAt DateTime?    @map("last_triggered_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  campaign      Campaign?      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  notifications Notification[]
+
+  @@index([workspaceId])
+  @@index([campaignId])
+  @@map("automation_rules")
+}
+
+model Notification {
+  id          String             @id @default(cuid())
+  workspaceId String             @map("workspace_id")
+  ruleId      String?            @map("rule_id")
+  campaignId  String?            @map("campaign_id")
+  title       String
+  message     String
+  type        NotificationType   @default(INFO)
+  status      NotificationStatus @default(UNREAD)
+  actionType  String?            @map("action_type") // e.g. 'PAUSE_CAMPAIGN'
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  rule      AutomationRule? @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+  campaign  Campaign?       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+  @@map("notifications")
+}
+
+model SubscriptionEvent {
+  id          String          @id @default(cuid())
+  workspaceId String          @map("workspace_id")
+  eventType   String          @map("event_type")
+  provider    PaymentProvider
+  payload     Json
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("subscription_events")
+}
+
+model AiUsageLog {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  userId      String   @map("user_id")
+  feature     String
+  tokensUsed  Int      @map("tokens_used")
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([workspaceId, userId])
+  @@map("ai_usage_logs")
+}
