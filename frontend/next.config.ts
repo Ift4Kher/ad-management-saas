@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
+  compress: true,
+  poweredByHeader: false,
+  reactStrictMode: true,
+  experimental: {
+    optimizePackageImports: ["recharts", "lucide-react", "date-fns"],
+  },
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,

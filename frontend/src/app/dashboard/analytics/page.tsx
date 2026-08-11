@@ -3,7 +3,31 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useTranslation } from 'react-i18next';
-import { AnalyticsTrendChart, AnalyticsPlatformBarChart } from '@/components/AnalyticsCharts';
+import dynamic from 'next/dynamic';
+
+const AnalyticsTrendChart = dynamic(
+  () => import('@/components/AnalyticsCharts').then((mod) => mod.AnalyticsTrendChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-64 items-center justify-center bg-neutral-50 rounded-xl">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    ),
+  }
+);
+
+const AnalyticsPlatformBarChart = dynamic(
+  () => import('@/components/AnalyticsCharts').then((mod) => mod.AnalyticsPlatformBarChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-64 items-center justify-center bg-neutral-50 rounded-xl">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    ),
+  }
+);
 
 interface AnalyticsSummary {
   totalSpend: number;
