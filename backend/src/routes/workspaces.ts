@@ -962,6 +962,55 @@ workspacesRouter.post(
   },
 );
 
+/**
+ * GET /api/admin/stats
+ * Global Super Admin System Statistics (Requires Super Admin email).
+ */
+workspacesRouter.get(
+  '/admin/stats',
+  requireAuth,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (req.user?.email !== 'admin@adsync.com') {
+        res.status(403).json({ error: 'Forbidden: Super Admin access required.' });
+        return;
+      }
+
+      const totalUsers = await prisma.user.count();
+      const totalWorkspaces = await prisma.workspace.count();
+      const totalCampaigns = await prisma.campaign.count();
+      const totalConnections = await prisma.adAccountConnection.count();
+
+      const aiAgg = await prisma.aiUsageLog.aggregate({
+        _sum: { tokensUsed: true },
+      });
+
+      const workspacesList = await prisma.workspace.findMany({
+        include: {
+          owner: { select: { id: true, name: true, email: true } },
+          _count: { select: { members: true, campaigns: true, adAccountConnections: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      res.json({
+        systemStats: {
+          totalUsers,
+          totalWorkspaces,
+          totalCampaigns,
+          totalConnections,
+          totalAiTokensUsed: aiAgg._sum.tokensUsed || 0,
+        },
+        workspaces: workspacesList,
+      });
+    } catch (err) {
+      logger.error({ err }, 'Error fetching system admin stats');
+      res.status(500).json({ error: 'Internal server error.' });
+    }
+  },
+);
+
+
 
 
 

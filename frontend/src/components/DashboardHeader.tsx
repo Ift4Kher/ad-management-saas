@@ -194,6 +194,18 @@ export default function DashboardHeader() {
         >
           Connections
         </Link>
+        {user.email === 'admin@adsync.com' && (
+          <Link
+            href="/dashboard/admin"
+            className={`border-b-2 py-3 text-sm font-semibold transition-colors ${
+              pathname === '/dashboard/admin'
+                ? 'border-error text-error'
+                : 'border-transparent text-error/80 hover:text-error'
+            }`}
+          >
+            👑 Super Admin
+          </Link>
+        )}
       </div>
 
       {/* Unverified Email Alert Banner */}
