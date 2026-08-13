@@ -60,48 +60,58 @@ connectionsRouter.get(
 );
 
 /**
- * GET /api/workspaces/:workspaceId/connections/:platform/connect
+ * GET/POST /api/workspaces/:workspaceId/connections/:platform/connect
  * Initiate OAuth authorization flow for Google, Meta, or TikTok.
  * Requires: EDITOR or OWNER role, verified email address.
  */
+const handleInitiateConnection = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const platform = req.params.platform as string;
+    const uppercasePlatform = platform.toUpperCase() as Platform;
+
+    if (!Object.values(Platform).includes(uppercasePlatform)) {
+      res.status(400).json({ error: `Invalid platform '${platform}'. Must be GOOGLE, META, or TIKTOK.` });
+      return;
+    }
+
+    // Generate state token containing workspaceId and platform
+    const stateToken = generateActionToken({
+      userId: `${req.workspaceId}:${uppercasePlatform}`,
+      type: 'VERIFY_EMAIL', // reusing generic action token payload structure
+    });
+
+    const statePayload = Buffer.from(
+      JSON.stringify({
+        workspaceId: req.workspaceId,
+        platform: uppercasePlatform,
+        userId: req.user!.id,
+        token: stateToken,
+      }),
+    ).toString('base64');
+
+    const authUrl = getPlatformAuthUrl(uppercasePlatform, statePayload);
+
+    res.json({ url: authUrl, authUrl });
+  } catch (err) {
+    logger.error({ err }, 'Error initiating OAuth connection');
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+};
+
 connectionsRouter.get(
   '/workspaces/:workspaceId/connections/:platform/connect',
   requireAuth,
   requireWorkspaceAccess(WorkspaceRole.EDITOR),
   requireEmailVerified,
-  async (req: Request, res: Response): Promise<void> => {
-    try {
-      const platform = req.params.platform as string;
-      const uppercasePlatform = platform.toUpperCase() as Platform;
+  handleInitiateConnection,
+);
 
-      if (!Object.values(Platform).includes(uppercasePlatform)) {
-        res.status(400).json({ error: `Invalid platform '${platform}'. Must be GOOGLE, META, or TIKTOK.` });
-        return;
-      }
-
-      // Generate state token containing workspaceId and platform
-      const stateToken = generateActionToken({
-        userId: `${req.workspaceId}:${uppercasePlatform}`,
-        type: 'VERIFY_EMAIL', // reusing generic action token payload structure
-      });
-
-      const statePayload = Buffer.from(
-        JSON.stringify({
-          workspaceId: req.workspaceId,
-          platform: uppercasePlatform,
-          userId: req.user!.id,
-          token: stateToken,
-        }),
-      ).toString('base64');
-
-      const authUrl = getPlatformAuthUrl(uppercasePlatform, statePayload);
-
-      res.json({ authUrl });
-    } catch (err) {
-      logger.error({ err }, 'Error initiating OAuth connection');
-      res.status(500).json({ error: 'Internal server error.' });
-    }
-  },
+connectionsRouter.post(
+  '/workspaces/:workspaceId/connections/:platform/connect',
+  requireAuth,
+  requireWorkspaceAccess(WorkspaceRole.EDITOR),
+  requireEmailVerified,
+  handleInitiateConnection,
 );
 
 /**

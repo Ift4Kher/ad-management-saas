@@ -82,8 +82,9 @@ export default function ConnectionsPage() {
       }
 
       // Redirect user to OAuth authorization URL
-      if (data.url) {
-        window.location.href = data.url;
+      const redirectTarget = data.url || data.authUrl;
+      if (redirectTarget) {
+        window.location.href = redirectTarget;
       }
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Error initiating connection.');
