@@ -1,5 +1,5 @@
 // =============================================================================
-// AdSync Database Schema — Prisma ORM on Neon (PostgreSQL)
+// AdSync Database Schema — Prisma ORM on MySQL 8+
 // =============================================================================
 
 generator client {
@@ -7,9 +7,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 // -----------------------------------------------------------------------------
@@ -129,9 +128,9 @@ model User {
 }
 
 model Workspace {
-  id        String   @id @default(cuid())
-  name      String
-  ownerId   String   @map("owner_id")
+  id                   String             @id @default(cuid())
+  name                 String
+  ownerId              String             @map("owner_id")
   locale               String             @default("en")
   plan                 PlanTier           @default(STARTER)
   subscriptionStatus   SubscriptionStatus @default(ACTIVE) @map("subscription_status")
@@ -141,15 +140,15 @@ model Workspace {
   createdAt            DateTime           @default(now()) @map("created_at")
   updatedAt            DateTime           @updatedAt @map("updated_at")
 
-  owner                 User                  @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members               WorkspaceMember[]
+  owner                User                  @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members              WorkspaceMember[]
   adAccountConnections AdAccountConnection[]
-  campaigns             Campaign[]
-  creativeAssets        CreativeAsset[]
-  automationRules       AutomationRule[]
-  notifications         Notification[]
-  subscriptionEvents    SubscriptionEvent[]
-  aiUsageLogs           AiUsageLog[]
+  campaigns            Campaign[]
+  creativeAssets       CreativeAsset[]
+  automationRules      AutomationRule[]
+  notifications        Notification[]
+  subscriptionEvents   SubscriptionEvent[]
+  aiUsageLogs          AiUsageLog[]
 
   @@map("workspaces")
 }
