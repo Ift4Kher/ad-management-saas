@@ -39,6 +39,17 @@ app.prepare().then(async () => {
     console.error('Fatal: Error attaching backend API module:', err);
   }
 
+  // 2.5 Auto-Setup Route for cPanel users (generates Prisma client via browser)
+  server.get('/api/setup', (req, res) => {
+    const { exec } = require('child_process');
+    exec('npx prisma generate --schema=backend/prisma/schema.prisma', (error, stdout, stderr) => {
+      if (error) {
+        return res.status(500).send(`<pre>Error: ${error.message}\n${stderr}</pre>`);
+      }
+      res.send(`<h3>Prisma Client Generated Successfully!</h3><pre>${stdout}</pre><p>Please go back to cPanel and click <b>Restart Application</b>, then your app will work perfectly.</p>`);
+    });
+  });
+
   // 3. Next.js handles all frontend pages and SSR
   server.all('*', (req, res) => {
     return handle(req, res);
