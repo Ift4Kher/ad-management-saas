@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   experimental: {
-    optimizePackageImports: ["recharts", "lucide-react", "date-fns"],
+    optimizePackageImports: ["recharts", "date-fns"],
   },
   async rewrites() {
     const backendUrl = process.env.BACKEND_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
