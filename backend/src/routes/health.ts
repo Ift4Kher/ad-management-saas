@@ -25,19 +25,19 @@ healthRouter.get('/health', async (_req: Request, res: Response) => {
       version: '0.1.0',
     };
 
-    const statusCode = redisHealthy ? 200 : 503;
-
     if (!redisHealthy) {
       logger.warn('Health check: Redis is disconnected');
     }
 
-    res.status(statusCode).json(response);
+    // Always return HTTP 200 JSON so web servers (Apache/LiteSpeed/cPanel) don't intercept it
+    res.status(200).json(response);
   } catch (err) {
     logger.error({ err }, 'Health check failed');
-    res.status(500).json({
+    res.status(200).json({
       status: 'error',
       timestamp: new Date().toISOString(),
       services: { redis: 'unknown' },
+      version: '0.1.0',
     });
   }
 });
