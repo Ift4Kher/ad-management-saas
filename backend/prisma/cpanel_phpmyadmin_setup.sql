@@ -211,9 +211,9 @@ CREATE TABLE `ai_usage_logs` (
 -- 'Password123!'  -> $2b$10$tZ2R8Z1qg9Q8W8p7X6e5V.x1Y4b7A2C5e8F1a4D7g0J3K6L9N2P5R
 
 INSERT INTO `users` (`id`, `name`, `email`, `password_hash`, `locale`, `email_verified_at`, `created_at`, `updated_at`) VALUES
-('usr_superadmin', 'Super Admin', 'admin@adsync.com', '$2b$10$w4r6P2L27jD8bXzV8p0LZeo0g1I6c4a4u.27F7mI.xY3C7bZ2I7wK', 'en', NOW(3), NOW(3), NOW(3)),
-('usr_alpha', 'Alpha Owner', 'user_alpha@adsync.test', '$2b$10$tZ2R8Z1qg9Q8W8p7X6e5V.x1Y4b7A2C5e8F1a4D7g0J3K6L9N2P5R', 'en', NOW(3), NOW(3), NOW(3)),
-('usr_beta', 'Beta Owner', 'user_beta@adsync.test', '$2b$10$tZ2R8Z1qg9Q8W8p7X6e5V.x1Y4b7A2C5e8F1a4D7g0J3K6L9N2P5R', 'en', NOW(3), NOW(3), NOW(3));
+('usr_superadmin', 'Super Admin', 'admin@adsync.com', '$2b$10$SWBeLxP2e4DT3w6kcS8hjuXwj.vb3UB3WsZAhwJ4tTKf4ug/5uEq6', 'en', NOW(3), NOW(3), NOW(3)),
+('usr_alpha', 'Alpha Owner', 'user_alpha@adsync.test', '$2b$10$5Rt5PmSlBSUvcbjMt70cvOeXCLcFSWRHZT9XiHTIfKG9LEqG7wQ/K', 'en', NOW(3), NOW(3), NOW(3)),
+('usr_beta', 'Beta Owner', 'user_beta@adsync.test', '$2b$10$5Rt5PmSlBSUvcbjMt70cvOeXCLcFSWRHZT9XiHTIfKG9LEqG7wQ/K', 'en', NOW(3), NOW(3), NOW(3));
 
 INSERT INTO `workspaces` (`id`, `name`, `owner_id`, `locale`, `plan`, `subscription_status`, `created_at`, `updated_at`) VALUES
 ('ws_superadmin', 'Super Admin Enterprise Workspace', 'usr_superadmin', 'en', 'AGENCY', 'ACTIVE', NOW(3), NOW(3)),
