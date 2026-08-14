@@ -6,6 +6,7 @@
  */
 
 const path = require('path');
+const { pathToFileURL } = require('url');
 const express = require('express');
 const next = require('next');
 const dotenv = require('dotenv');
@@ -26,15 +27,16 @@ const PORT = process.env.PORT || 3000;
 app.prepare().then(async () => {
   const server = express();
 
-  // 2. Attach Express API routes
+  // 2. Attach Express API routes from backend
   try {
-    const backendModule = await import('./backend/dist/index.js');
+    const backendFileUrl = pathToFileURL(path.resolve(__dirname, 'backend/dist/index.js')).href;
+    const backendModule = await import(backendFileUrl);
     if (backendModule && backendModule.default) {
       server.use(backendModule.default);
-      console.log('✓ AdSync Express API routes attached');
+      console.log('✓ AdSync Express API routes successfully attached');
     }
   } catch (err) {
-    console.error('Warning: Error attaching backend API module:', err);
+    console.error('Fatal: Error attaching backend API module:', err);
   }
 
   // 3. Next.js handles all frontend pages and SSR

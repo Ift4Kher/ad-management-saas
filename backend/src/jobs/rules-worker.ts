@@ -14,13 +14,10 @@ interface RulesJobData {
   workspaceId: string;
 }
 
-const REDIS_URL = process.env.UPSTASH_REDIS_URL;
-
 let rulesWorker: Worker | null = null;
+const workerConnection = createRedisConnection();
 
-if (REDIS_URL) {
-  const workerConnection = createRedisConnection();
-
+if (workerConnection) {
   rulesWorker = new Worker<RulesJobData>(
     'evaluate-rules',
     async (job: Job<RulesJobData>) => {

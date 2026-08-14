@@ -25,13 +25,10 @@ interface PublishJobData {
   workspaceId: string;
 }
 
-const REDIS_URL = process.env.UPSTASH_REDIS_URL;
-
 let publishWorker: Worker | null = null;
+const workerConnection = createRedisConnection();
 
-if (REDIS_URL) {
-  const workerConnection = createRedisConnection();
-
+if (workerConnection) {
   publishWorker = new Worker<PublishJobData>(
     'publish-campaign',
     async (job: Job<PublishJobData>) => {

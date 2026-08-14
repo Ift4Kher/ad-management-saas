@@ -4,63 +4,65 @@
  * Uses ioredis (NOT the Upstash REST SDK) because BullMQ requires a
  * persistent Redis protocol connection. The `rediss://` URL from Upstash
  * provides TLS-encrypted connectivity.
- *
- * Key config:
- * - tls: {} — required for Upstash's TLS endpoint
- * - maxRetriesPerRequest: null — required by BullMQ
- * - enableReadyCheck: false — smoother cloud Redis startup
  */
 import { Redis } from 'ioredis';
 import { logger } from './logger.js';
 
-const REDIS_URL = process.env.UPSTASH_REDIS_URL || '';
+const rawRedisUrl = process.env.UPSTASH_REDIS_URL || '';
+const isRedisConfigured =
+  Boolean(rawRedisUrl) &&
+  !rawRedisUrl.includes('your-endpoint.upstash.io') &&
+  !rawRedisUrl.includes('your-password') &&
+  rawRedisUrl.startsWith('redis');
 
-if (!REDIS_URL) {
-  logger.warn('UPSTASH_REDIS_URL not set — Redis features will be unavailable');
+if (!isRedisConfigured) {
+  logger.warn('UPSTASH_REDIS_URL is not configured or using placeholder — running in in-memory fallback mode');
 }
 
 /**
  * Create a new Redis connection to Upstash.
- * Each BullMQ Queue/Worker needs its own connection instance,
- * so we export a factory function alongside the shared instance.
  */
-export function createRedisConnection(): Redis {
-  return new Redis(REDIS_URL, {
-    maxRetriesPerRequest: null, // Required by BullMQ
-    enableReadyCheck: false, // Smoother for cloud Redis
-    retryStrategy(times: number) {
-      if (times > 10) {
-        logger.error('Redis connection failed after 10 retries — giving up');
-        return null;
-      }
-      return Math.min(times * 200, 3000);
-    },
-  });
+export function createRedisConnection(): Redis | null {
+  if (!isRedisConfigured) return null;
+
+  try {
+    const client = new Redis(rawRedisUrl, {
+      maxRetriesPerRequest: null,
+      enableReadyCheck: false,
+      lazyConnect: true,
+      retryStrategy(times: number) {
+        if (times > 3) {
+          return null; // Don't hang the server with endless retries
+        }
+        return Math.min(times * 200, 1000);
+      },
+    });
+
+    client.on('error', (err: Error) => {
+      logger.warn({ err: err.message }, 'Redis fallback: connection failed, continuing in offline mode');
+    });
+
+    return client;
+  } catch (err) {
+    logger.warn({ err }, 'Could not create Redis connection');
+    return null;
+  }
 }
 
-// Shared connection instance for general Redis operations (health checks, caching)
-export const redis = REDIS_URL ? createRedisConnection() : null;
+// Shared connection instance for general Redis operations
+export const redis = isRedisConfigured ? createRedisConnection() : null;
 
 if (redis) {
-  redis.on('connect', () => {
-    logger.info('Redis connected (Upstash)');
-  });
-
-  redis.on('error', (err: Error) => {
-    logger.error({ err }, 'Redis connection error');
-  });
-
-  redis.on('close', () => {
-    logger.warn('Redis connection closed');
+  redis.connect().catch(() => {
+    logger.warn('Redis connection failed on initial connect — running in fallback mode');
   });
 }
 
 /**
  * Check Redis connectivity by sending a PING command.
- * Returns true if Redis responds with "PONG", false otherwise.
  */
 export async function checkRedisHealth(): Promise<boolean> {
-  if (!redis) return false;
+  if (!redis || !isRedisConfigured) return false;
   try {
     const result = await redis.ping();
     return result === 'PONG';

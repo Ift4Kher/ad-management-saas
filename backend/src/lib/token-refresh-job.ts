@@ -16,15 +16,13 @@ import { Sentry } from './sentry.js';
 import { ConnectionStatus } from '@prisma/client';
 
 const QUEUE_NAME = 'token-refresh-queue';
-const REDIS_URL = process.env.UPSTASH_REDIS_URL;
-
 let tokenRefreshQueue: Queue | null = null;
 let tokenRefreshWorker: Worker | null = null;
 
-if (REDIS_URL) {
-  const queueConnection = createRedisConnection();
-  const workerConnection = createRedisConnection();
+const queueConnection = createRedisConnection();
+const workerConnection = createRedisConnection();
 
+if (queueConnection && workerConnection) {
   tokenRefreshQueue = new Queue(QUEUE_NAME, {
     connection: queueConnection,
     defaultJobOptions: {

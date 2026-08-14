@@ -1,88 +1,85 @@
 /**
  * BullMQ job queue infrastructure for the AdSync backend.
  *
- * Connects to Upstash Redis over TLS. Sets up queues for:
- * - test-queue: Verify BullMQ + Redis integration
- * - publish-campaign: Campaign publishing jobs (one per platform)
- * - evaluate-rules: Automation rules evaluation background jobs
- *
- * COST NOTE: Upstash charges per command. BullMQ polls Redis frequently,
- * so we increase stalledInterval and guardInterval to reduce idle cost.
+ * Connects to Upstash Redis over TLS if configured.
+ * In development or standalone mode without Redis, gracefully operates in fallback mode.
  */
 import { Queue, Worker, type Job } from 'bullmq';
 import { createRedisConnection } from './redis.js';
 import { logger } from './logger.js';
-
-const REDIS_URL = process.env.UPSTASH_REDIS_URL;
 
 let testQueue: Queue | null = null;
 let testWorker: Worker | null = null;
 let publishQueue: Queue | null = null;
 let rulesQueue: Queue | null = null;
 
-if (REDIS_URL) {
-  const queueConnection = createRedisConnection();
-  const workerConnection = createRedisConnection();
-  const publishQueueConnection = createRedisConnection();
-  const rulesQueueConnection = createRedisConnection();
+const queueConnection = createRedisConnection();
+const workerConnection = createRedisConnection();
+const publishQueueConnection = createRedisConnection();
+const rulesQueueConnection = createRedisConnection();
 
-  testQueue = new Queue('test-queue', {
-    connection: queueConnection,
-    defaultJobOptions: {
-      removeOnComplete: 10,
-      removeOnFail: 50,
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 1000,
+if (queueConnection && workerConnection && publishQueueConnection && rulesQueueConnection) {
+  try {
+    testQueue = new Queue('test-queue', {
+      connection: queueConnection,
+      defaultJobOptions: {
+        removeOnComplete: 10,
+        removeOnFail: 50,
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 1000,
+        },
       },
-    },
-  });
+    });
 
-  publishQueue = new Queue('publish-campaign', {
-    connection: publishQueueConnection,
-    defaultJobOptions: {
-      removeOnComplete: 50,
-      removeOnFail: 100,
-      attempts: 1,
-    },
-  });
+    publishQueue = new Queue('publish-campaign', {
+      connection: publishQueueConnection,
+      defaultJobOptions: {
+        removeOnComplete: 50,
+        removeOnFail: 100,
+        attempts: 1,
+      },
+    });
 
-  rulesQueue = new Queue('evaluate-rules', {
-    connection: rulesQueueConnection,
-    defaultJobOptions: {
-      removeOnComplete: 50,
-      removeOnFail: 100,
-      attempts: 1,
-    },
-  });
+    rulesQueue = new Queue('evaluate-rules', {
+      connection: rulesQueueConnection,
+      defaultJobOptions: {
+        removeOnComplete: 50,
+        removeOnFail: 100,
+        attempts: 1,
+      },
+    });
 
-  testWorker = new Worker(
-    'test-queue',
-    async (job: Job) => {
-      logger.info({ jobId: job.id, data: job.data }, 'Processing test job');
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      logger.info({ jobId: job.id }, 'Test job completed');
-      return { processed: true, timestamp: new Date().toISOString() };
-    },
-    {
-      connection: workerConnection,
-      stalledInterval: 300_000,
-      lockDuration: 60_000,
-    },
-  );
+    testWorker = new Worker(
+      'test-queue',
+      async (job: Job) => {
+        logger.info({ jobId: job.id, data: job.data }, 'Processing test job');
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        logger.info({ jobId: job.id }, 'Test job completed');
+        return { processed: true, timestamp: new Date().toISOString() };
+      },
+      {
+        connection: workerConnection,
+        stalledInterval: 300_000,
+        lockDuration: 60_000,
+      },
+    );
 
-  testWorker.on('completed', (job: Job) => {
-    logger.debug({ jobId: job.id }, 'Test worker: job completed');
-  });
+    testWorker.on('completed', (job: Job) => {
+      logger.debug({ jobId: job.id }, 'Test worker: job completed');
+    });
 
-  testWorker.on('failed', (job: Job | undefined, err: Error) => {
-    logger.error({ jobId: job?.id, err }, 'Test worker: job failed');
-  });
+    testWorker.on('failed', (job: Job | undefined, err: Error) => {
+      logger.error({ jobId: job?.id, err }, 'Test worker: job failed');
+    });
 
-  logger.info('BullMQ queues initialized (test-queue, publish-campaign, evaluate-rules)');
+    logger.info('BullMQ queues initialized (test-queue, publish-campaign, evaluate-rules)');
+  } catch (err) {
+    logger.warn({ err }, 'BullMQ initialization skipped — Redis unavailable');
+  }
 } else {
-  logger.warn('BullMQ not initialized — UPSTASH_REDIS_URL not set');
+  logger.warn('BullMQ not initialized — running in direct execution fallback mode');
 }
 
 export { testQueue, publishQueue, rulesQueue };
