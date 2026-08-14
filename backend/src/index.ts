@@ -99,21 +99,30 @@ app.get('/api/test-error', (_req, res) => {
 // ---------------------------------------------------------------------------
 // Server startup
 // ---------------------------------------------------------------------------
-const server = app.listen(PORT, '0.0.0.0', () => {
-  logger.info({ port: PORT }, '🚀 AdSync backend server started');
-});
+let server: any;
+if (process.env.EMBEDDED_SERVER !== 'true') {
+  server = app.listen(PORT, '0.0.0.0', () => {
+    logger.info({ port: PORT }, '🚀 AdSync backend server started');
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Graceful shutdown
 // ---------------------------------------------------------------------------
 async function shutdown(signal: string) {
   logger.info({ signal }, 'Received shutdown signal — closing gracefully');
-  server.close(async () => {
+  if (server) {
+    server.close(async () => {
+      await closeQueues();
+      if (redis) await redis.quit();
+      logger.info('Server shut down cleanly');
+      process.exit(0);
+    });
+  } else {
     await closeQueues();
     if (redis) await redis.quit();
-    logger.info('Server shut down cleanly');
     process.exit(0);
-  });
+  }
   setTimeout(() => {
     logger.error('Graceful shutdown timed out — forcing exit');
     process.exit(1);

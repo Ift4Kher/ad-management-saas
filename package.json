@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "description": "AdSync — Unified ad campaign management SaaS platform",
+  "main": "server.js",
   "workspaces": [
     "frontend",
     "backend"
   ],
   "scripts": {
+    "start": "node server.js",
     "dev:backend": "npm run dev --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend",
     "build": "npm run build --workspaces",
@@ -17,6 +19,13 @@
     "test": "npm run test --workspaces --if-present",
     "test:backend": "npm run test --workspace=backend",
     "test:e2e": "npm run test:e2e --workspace=frontend"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "next": "16.3.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
   },
   "engines": {
     "node": ">=18.0.0"
