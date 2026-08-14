@@ -22,7 +22,7 @@ function AdminSystemContent() {
   useEffect(() => {
     const fetchHealth = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
         const res = await fetch(`${apiUrl}/api/health`);
         if (!res.ok) throw new Error('Failed to fetch system health.');
         const data = await res.json();

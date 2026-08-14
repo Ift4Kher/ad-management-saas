@@ -1,5 +1,5 @@
 /**
- * AdSync Signup Page — fully localized via i18next
+ * AdSync Signup Page — fully localized via i18next with show/hide password toggle
  */
 'use client';
 
@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import { Eye, EyeOff } from 'lucide-react';
 import I18nProvider from '@/components/I18nProvider';
 import LanguageToggle from '@/components/LanguageToggle';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
@@ -19,10 +20,11 @@ function SignupForm() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +38,13 @@ function SignupForm() {
         body: JSON.stringify({ name, email, password }),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(text.slice(0, 100) || 'Failed to communicate with server.');
+      }
 
       if (!res.ok) {
         throw new Error(data.error || 'Failed to create account.');
@@ -90,6 +98,7 @@ function SignupForm() {
                 placeholder={t('auth.name_placeholder')}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                className="w-full rounded-[var(--radius-md)] border border-neutral-300 px-3.5 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
@@ -101,19 +110,31 @@ function SignupForm() {
                 placeholder={t('auth.email_placeholder')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-[var(--radius-md)] border border-neutral-300 px-3.5 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
             <div>
               <label className="mb-1.5 block text-sm font-medium text-neutral-700">{t('auth.password_label')}</label>
-              <input
-                type="password"
-                required
-                minLength={8}
-                placeholder={t('auth.password_min')}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  minLength={8}
+                  placeholder={t('auth.password_min')}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-[var(--radius-md)] border border-neutral-300 px-3.5 py-2.5 pr-10 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors focus:outline-none"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
             <button

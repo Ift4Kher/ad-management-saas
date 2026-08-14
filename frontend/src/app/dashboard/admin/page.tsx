@@ -59,7 +59,7 @@ function SuperAdminContent() {
     const fetchAdminStats = async () => {
       try {
         const token = localStorage.getItem('adsync_token');
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
 
         const res = await fetch(`${apiUrl}/api/workspaces/admin/stats`, {
           headers: {
