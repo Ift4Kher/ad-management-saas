@@ -9,7 +9,6 @@
     "backend"
   ],
   "scripts": {
-    "postinstall": "cd backend && npx prisma generate",
     "start": "node server.js",
     "dev:backend": "npm run dev --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend",
